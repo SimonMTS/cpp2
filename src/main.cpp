@@ -1,37 +1,17 @@
-#include <stdio.h>
-#include <string.h>
-
-#include <fstream>
 #include <iostream>
-#include <memory>
-#include <vector>
 
-#include "bitVector.hpp"
+#include "fileParsers/wavParser.hpp"
+#include "helpers/optionParser.hpp"
 
-int main() {
+int main(int argc, char** argv) {
     // hexdump -C ./data/de-oude-schicht.wav | less
+    const info info = optionParser::getInfo(argc, argv);
 
-    std::unique_ptr<std::ifstream> myFile = std::make_unique<std::ifstream>(
-        "./data/de-oude-schicht.wav", std::ios::in | std::ios::binary);
-    char buffer[12];
-    myFile->read(buffer, 12);  // skip RIFF header
-
-    char chunkName[5];
-    unsigned long chunksize;
-    while (myFile->read(chunkName, 4)) {
-        chunkName[4] = '\0';
-        myFile->read((char*)&chunksize, 4);
-        std::cout << chunkName << " - " << chunksize << std::endl;
-
-        if (strcmp(chunkName, "data") == 0) {
-            std::unique_ptr<bitVector> bvData = std::make_unique<bitVector>();
-            char sampleRaw[2];
-            while (myFile->read(sampleRaw, 2)) {
-                bvData->addFinal(sampleRaw[0]);
-            }
-            std::cout << "secret:\n" << *bvData << std::endl;
-        }
-
-        myFile->seekg(chunksize, std::ios_base::cur);
+    wavParser wp{};
+    if (info._mode == mode::decode) {
+        string str = wp.getData(info._file);
+        std::cout << str << std::endl;
+    } else {
+        wp.setData(info._file, info._text);
     }
 }

@@ -16,4 +16,6 @@ target_compile_features(avansSteganography PUBLIC cxx_std_17)
 
 add_executable(aSteg
     src/main.cpp
-    src/bitVector.cpp)
+    src/helpers/bitVector.cpp
+    src/helpers/optionParser.cpp
+    src/fileParsers/wavParser.cpp)
