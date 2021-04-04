@@ -1,31 +1,46 @@
 #include "bitVector.hpp"
 
-#include <array>
+bitVector::bitVector(const string& str) {
+    // for (const char c : str) {
+    //     this->push(c);
+    // }
+
+    for (int i = str.length() - 1; i >= 0; i--) {
+        this->push(str[i]);
+    }
+}
 
 string bitVector::toString() const {
-    std::array<char, 5000> res{};
+    vector<char> res{};
     for (uint i = 0; i < this->length; i++) {
-        res[(i - (i % 8)) / 8] <<= 1;
-        res[(i - (i % 8)) / 8] |= (*this->bits)[i];
+        ulong index = (i - (i % 8)) / 8;
+        if (index <= res.size()) res.push_back('\0');
+
+        res[index] <<= 1;
+        res[index] |= this->data[i];
     }
-    res[4999] = '\0';
+    res.push_back('\0');
 
     return res.data();
 }
 
-void bitVector::add(char c) {
-    //
+void bitVector::push(char c) {
+    for (int i = 0; i < 8; i++) {
+        this->pushFinal(c);
+        c >>= 1;
+    }
 }
 
-void bitVector::addFinal(char c) {
-    if (length >= 4999) return;
-
+void bitVector::pushFinal(char c) {
     c &= 0x1;
-    bool asd = c == 1;
-    this->bits->set(this->length, asd);
+    this->data.push_back(c == 1);
     this->length++;
 }
 
-int bitVector::getLength() const { return this->length; }
+bool bitVector::pop() {
+    bool res = this->data.back();
+    this->data.pop_back();
+    return res;
+}
 
-const bitset<5000>& bitVector::getBits() const { return *this->bits; }
+int bitVector::getLength() const { return this->length; }

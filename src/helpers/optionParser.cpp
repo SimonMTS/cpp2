@@ -12,7 +12,7 @@ bool info::isValid() const {
 }
 
 void optionParser::printUsage() {
-    std::cout << "\n"
+    std::cerr << "\n"
                  "-d, --decode:  Get hidden text from file, "
                  "and print to stdout.\n"
                  "-e, --encode:  Hide text in file\n"

@@ -1,24 +1,24 @@
 #pragma once
-#include <bits/stdc++.h>
-
-#include <memory>
 #include <ostream>
-using std::bitset;
-using std::make_unique;
+#include <vector>
 using std::ostream;
 using std::string;
-using std::unique_ptr;
+using std::vector;
 
 class bitVector {
    private:
     uint length = 0;
-    unique_ptr<bitset<5000>> bits = make_unique<bitset<5000>>();
+    vector<bool> data{};
 
    public:
-    void add(char c);
-    void addFinal(char c);
+    bitVector(){};
+    bitVector(const string& str);
+
+    void push(char c);
+    void pushFinal(char c);
+
+    bool pop();
 
     string toString() const;
     int getLength() const;
-    const bitset<5000>& getBits() const;
 };
