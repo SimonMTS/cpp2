@@ -7,11 +7,10 @@ int main(int argc, char** argv) {
     // hexdump -C ./data/de-oude-schicht.wav | less
     const info info = optionParser::getInfo(argc, argv);
 
-    wavParser wp{};
+    wavParser wp{info._file};
     if (info._mode == mode::decode) {
-        string str = wp.getData(info._file);
-        std::cout << str << std::endl;
+        wp.getData();
     } else {
-        wp.setData(info._file, info._text);
+        wp.setData(info._text);
     }
 }
