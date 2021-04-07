@@ -1,4 +1,8 @@
-#include "wavParser.hpp"
+#include "cafParser.hpp"
+
+#include <bits/stdint-uintn.h>
+#include <stdint.h>
+#include <sys/types.h>
 
 #include <cstring>
 #include <fstream>
@@ -12,7 +16,9 @@ using std::ifstream;
 using std::ios;
 using std::make_unique;
 
-wavParser::wavParser(const string& filename) {
+// https://developer.apple.com/library/archive/documentation/MusicAudio/Reference/CAFSpec/CAF_spec/CAF_spec.html#//apple_ref/doc/uid/TP40001862-CH210-TPXREF101
+
+cafParser::cafParser(const string& filename) {
     // open file
     this->file = make_unique<ifstream>();
     this->file->open(filename, ios::in | ios::binary);
@@ -23,34 +29,47 @@ wavParser::wavParser(const string& filename) {
     }
 }
 
-void wavParser::getData() const {
-    string info = "fileType: wav\n";
+void cafParser::getData() const {
+    string info = "fileType: caf\n";
     string chunks = "chunks:\n";
 
     // char array to read data into
     char buffer[16];
 
-    // skip RIFF header
-    this->file->read(buffer, 12);
-    // todo, is this really a wav file?
+    // skip CAFFileHeader header
+    this->file->read(buffer, 8);
+    // todo, is this really a caf file?
 
     auto bvData = make_unique<bitVector>();
     bool readingData = false;
     int bytesToRead = 4;
 
-    uint32_t chunksize;
+    int64_t chunksize;
     uint16_t sampleSize;
     while (this->file->read(buffer, bytesToRead)) {
         if (!readingData) {
             buffer[4] = '\0';  // end string after 4 chars
-            this->file->read((char*)&chunksize, 4);
+
+            {
+                char csBuffer[8];
+                this->file->read(csBuffer, 8);
+                chunksize = ((int64_t)csBuffer[7] << 0) +   //
+                            ((int64_t)csBuffer[6] << 8) +   //
+                            ((int64_t)csBuffer[5] << 16) +  //
+                            ((int64_t)csBuffer[4] << 24) +  //
+                            ((int64_t)csBuffer[3] << 32) +  //
+                            ((int64_t)csBuffer[2] << 40) +  //
+                            ((int64_t)csBuffer[1] << 48) +  //
+                            ((int64_t)csBuffer[0] << 56);   //
+            }
             chunks += "   " + string(buffer) + " - " +
                       std::to_string(chunksize) + "\n";
 
-            if (strcmp(buffer, "fmt ") == 0) {
-                this->file->read(buffer, 16);
+            if (strcmp(buffer, "desc") == 0) {
+                this->file->read(buffer, 32);
 
-                sampleSize = (uint16_t)buffer[14];
+                sampleSize = 16;
+                // sampleSize = (uint16_t)buffer[14];
                 info += "sampleSize: " + std::to_string(sampleSize) + "bit\n";
                 continue;
             }
@@ -73,8 +92,8 @@ void wavParser::getData() const {
     std::cout << bvData->toString() << std::endl;
 }
 
-void wavParser::setData(const string& data) const {
-    string info = "fileType: wav\n";
+void cafParser::setData(const string& data) const {
+    string info = "fileType: caf\n";
     string chunks = "chunks:\n";
 
     // char array to read data into
@@ -82,7 +101,6 @@ void wavParser::setData(const string& data) const {
 
     // skip RIFF header
     this->file->read(buffer, 12);
-    // todo, is this really a wav file?
     binToStdout(buffer, 12);
 
     auto bvData = make_unique<bitVector>(data);

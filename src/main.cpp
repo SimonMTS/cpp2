@@ -1,16 +1,31 @@
 #include <iostream>
+#include <memory>
 
+#include "fileParsers/cafParser.hpp"
+#include "fileParsers/fileParser.hpp"
 #include "fileParsers/wavParser.hpp"
 #include "helpers/optionParser.hpp"
+using std::make_unique;
 
 int main(int argc, char** argv) {
-    // hexdump -C ./data/de-oude-schicht.wav | less
     const info info = optionParser::getInfo(argc, argv);
 
-    wavParser wp{info._file};
-    if (info._mode == mode::decode) {
-        wp.getData();
+    unique_ptr<fileParser> fp;
+
+    const string last3chars = info._file.substr(info._file.size() - 3, 3);
+    if (last3chars == "wav") {
+        fp = make_unique<wavParser>(info._file);
+    } else if (last3chars == "caf") {
+        fp = make_unique<cafParser>(info._file);
+        // } else if (last3chars == "aif") {
+        // fp = make_unique<aifParser>(info._file);
     } else {
-        wp.setData(info._text);
+        std::cout << "Unsupported file format";
+    }
+
+    if (info._mode == mode::decode) {
+        fp->getData();
+    } else {
+        fp->setData(info._text);
     }
 }

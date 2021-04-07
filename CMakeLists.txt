@@ -18,4 +18,5 @@ add_executable(aSteg
     src/main.cpp
     src/helpers/bitVector.cpp
     src/helpers/optionParser.cpp
+    src/fileParsers/cafParser.cpp
     src/fileParsers/wavParser.cpp)

@@ -8,12 +8,12 @@ using std::ifstream;
 using std::string;
 using std::unique_ptr;
 
-class wavParser : public fileParser {
+class cafParser : public fileParser {
    private:
     unique_ptr<ifstream> file;
 
    public:
-    wavParser(const string& filename);
+    cafParser(const string& filename);
     void getData() const override;
     void setData(const string& data) const override;
 };
