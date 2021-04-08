@@ -32,7 +32,10 @@ void wavParser::getData() const {
 
     // skip RIFF header
     this->file->read(buffer, 12);
-    // todo, is this really a wav file?
+    buffer[12] = '\0';  // end string after 4 chars
+    if (strcmp(&buffer[8], "WAVE") != 0) {
+        std::cerr << "Are you sure this is a wav file?\n\n";
+    }
 
     auto bvData = make_unique<bitVector>();
     bool readingData = false;
@@ -82,7 +85,10 @@ void wavParser::setData(const string& data) const {
 
     // skip RIFF header
     this->file->read(buffer, 12);
-    // todo, is this really a wav file?
+    buffer[12] = '\0';  // end string after 4 chars
+    if (strcmp(&buffer[8], "WAVE") != 0) {
+        std::cerr << "Are you sure this is a wav file?\n\n";
+    }
     binToStdout(buffer, 12);
 
     auto bvData = make_unique<bitVector>(data);
@@ -93,7 +99,7 @@ void wavParser::setData(const string& data) const {
     uint16_t sampleSize;
     while (this->file->read(buffer, bytesToRead)) {
         if (!readingData) {
-            buffer[4] = '\0';
+            buffer[4] = '\0';  // end string after 4 chars
             binToStdout(buffer, 4);
 
             this->file->read((char*)&chunksize, 4);

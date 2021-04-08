@@ -1,7 +1,10 @@
 #include "cafParser.hpp"
 
+#include <bits/floatn-common.h>
+#include <bits/stdint-intn.h>
 #include <bits/stdint-uintn.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <sys/types.h>
 
 #include <cstring>
@@ -15,8 +18,6 @@
 using std::ifstream;
 using std::ios;
 using std::make_unique;
-
-// https://developer.apple.com/library/archive/documentation/MusicAudio/Reference/CAFSpec/CAF_spec/CAF_spec.html#//apple_ref/doc/uid/TP40001862-CH210-TPXREF101
 
 cafParser::cafParser(const string& filename) {
     // open file
@@ -34,55 +35,56 @@ void cafParser::getData() const {
     string chunks = "chunks:\n";
 
     // char array to read data into
-    char buffer[16];
+    char buffer[32];
 
     // skip CAFFileHeader header
     this->file->read(buffer, 8);
-    // todo, is this really a caf file?
+    buffer[4] = '\0';  // end string after 4 chars
+    if (strcmp(buffer, "caff") != 0) {
+        std::cerr << "Are you sure this is a caf file?\n\n";
+    }
 
     auto bvData = make_unique<bitVector>();
     bool readingData = false;
     int bytesToRead = 4;
 
     int64_t chunksize;
-    uint16_t sampleSize;
+    _Float64 sampleSize;
     while (this->file->read(buffer, bytesToRead)) {
         if (!readingData) {
             buffer[4] = '\0';  // end string after 4 chars
 
-            {
-                char csBuffer[8];
-                this->file->read(csBuffer, 8);
-                chunksize = ((int64_t)csBuffer[7] << 0) +   //
-                            ((int64_t)csBuffer[6] << 8) +   //
-                            ((int64_t)csBuffer[5] << 16) +  //
-                            ((int64_t)csBuffer[4] << 24) +  //
-                            ((int64_t)csBuffer[3] << 32) +  //
-                            ((int64_t)csBuffer[2] << 40) +  //
-                            ((int64_t)csBuffer[1] << 48) +  //
-                            ((int64_t)csBuffer[0] << 56);   //
-            }
+            this->file->read(&buffer[24], 8);
+            chunksize = ((uint8_t)buffer[31] << 0) |    //
+                        ((uint16_t)buffer[30] << 8) |   //
+                        ((uint64_t)buffer[29] << 16) |  //
+                        ((uint64_t)buffer[28] << 24) |  //
+                        ((uint64_t)buffer[27] << 32) |  //
+                        ((uint64_t)buffer[26] << 40) |  //
+                        ((uint64_t)buffer[25] << 48) |  //
+                        ((uint64_t)buffer[24] << 56);   //
             chunks += "   " + string(buffer) + " - " +
                       std::to_string(chunksize) + "\n";
 
             if (strcmp(buffer, "desc") == 0) {
                 this->file->read(buffer, 32);
 
-                sampleSize = 16;
-                // sampleSize = (uint16_t)buffer[14];
-                info += "sampleSize: " + std::to_string(sampleSize) + "bit\n";
+                sampleSize = (uint16_t)buffer[31];
+                info +=
+                    "sampleSize: " + std::to_string((int)sampleSize) + "bit\n";
                 continue;
             }
 
             if (strcmp(buffer, "data") == 0) {
                 readingData = true;
                 bytesToRead = sampleSize / 8;
+                this->file->seekg(4, std::ios_base::cur);  // skip mEditCount
                 continue;
             }
 
             this->file->seekg(chunksize, std::ios_base::cur);
         } else {
-            bvData->pushFinal(buffer[0]);
+            bvData->pushFinal(buffer[1]);
         }
     }
 
@@ -97,40 +99,55 @@ void cafParser::setData(const string& data) const {
     string chunks = "chunks:\n";
 
     // char array to read data into
-    char buffer[16];
+    char buffer[32];
 
-    // skip RIFF header
-    this->file->read(buffer, 12);
-    binToStdout(buffer, 12);
+    // skip CAFFileHeader header
+    this->file->read(buffer, 8);
+    buffer[4] = '\0';  // end string after 4 chars
+    if (strcmp(buffer, "caff") != 0) {
+        std::cerr << "Are you sure this is a caf file?\n\n";
+    }
+    binToStdout(buffer, 8);
 
     auto bvData = make_unique<bitVector>(data);
     bool readingData = false;
     int bytesToRead = 4;
 
-    uint32_t chunksize;
-    uint16_t sampleSize;
+    int64_t chunksize;
+    _Float64 sampleSize;
     while (this->file->read(buffer, bytesToRead)) {
         if (!readingData) {
-            buffer[4] = '\0';
+            buffer[4] = '\0';  // end string after 4 chars
             binToStdout(buffer, 4);
 
-            this->file->read((char*)&chunksize, 4);
+            this->file->read(&buffer[24], 8);
+            chunksize = ((uint8_t)buffer[31] << 0) |    //
+                        ((uint16_t)buffer[30] << 8) |   //
+                        ((uint64_t)buffer[29] << 16) |  //
+                        ((uint64_t)buffer[28] << 24) |  //
+                        ((uint64_t)buffer[27] << 32) |  //
+                        ((uint64_t)buffer[26] << 40) |  //
+                        ((uint64_t)buffer[25] << 48) |  //
+                        ((uint64_t)buffer[24] << 56);   //
             chunks += "   " + string(buffer) + " - " +
                       std::to_string(chunksize) + "\n";
-            binToStdout((char*)&chunksize, 4);
+            binToStdout(&buffer[24], 8);
 
-            if (strcmp(buffer, "fmt ") == 0) {
-                this->file->read(buffer, 16);
-                binToStdout(buffer, 16);
+            if (strcmp(buffer, "desc") == 0) {
+                this->file->read(buffer, 32);
+                binToStdout(buffer, 32);
 
-                sampleSize = (uint16_t)buffer[14];
-                info += "sampleSize: " + std::to_string(sampleSize) + "bit\n";
+                sampleSize = (uint16_t)buffer[31];
+                info +=
+                    "sampleSize: " + std::to_string((int)sampleSize) + "bit\n";
                 continue;
             }
 
             if (strcmp(buffer, "data") == 0) {
                 readingData = true;
                 bytesToRead = sampleSize / 8;
+                this->file->read(buffer, 4);
+                binToStdout(buffer, 4);  // skip mEditCount
                 continue;
             }
 
@@ -141,9 +158,9 @@ void cafParser::setData(const string& data) const {
             }
         } else {
             if (bvData->pop()) {
-                buffer[0] |= 1;
+                buffer[1] |= 1;
             } else {
-                buffer[0] &= ~1;
+                buffer[1] &= ~1;
             }
             binToStdout(buffer, sampleSize == 16 ? 2 : 3);
         }
