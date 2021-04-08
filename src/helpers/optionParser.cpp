@@ -16,6 +16,7 @@ void optionParser::printUsage() {
                  "-d, --decode:  Get hidden text from file, "
                  "and print to stdout.\n"
                  "-e, --encode:  Hide text in file\n"
+                 "-f, --file:    Input file\n"
                  "-h, --help:    Show this message.\n\n"
                  "example encode:\n"
                  "\taSteg -e 'text' -f ./input.wav > ./output.wav\n"
@@ -29,7 +30,8 @@ info optionParser::getInfo(int argc, char** argv) {
 
     const char* const short_opts = "de:f:h";
     const option long_opts[] = {{"encode", required_argument, nullptr, 'e'},
-                                {"decode", required_argument, nullptr, 'd'},
+                                {"decode", no_argument, nullptr, 'd'},
+                                {"file", required_argument, nullptr, 'f'},
                                 {"help", no_argument, nullptr, 'h'}};
 
     while (true) {

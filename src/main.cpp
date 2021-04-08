@@ -17,10 +17,13 @@ int main(int argc, char** argv) {
         fp = make_unique<wavParser>(info._file);
     } else if (last3chars == "caf") {
         fp = make_unique<cafParser>(info._file);
-        // } else if (last3chars == "aif") {
+    } else if (last3chars == "aif") {
         // fp = make_unique<aifParser>(info._file);
+        std::cout << "Unsupported file format\n";
+        exit(1);
     } else {
-        std::cout << "Unsupported file format";
+        std::cout << "Unsupported file format\n";
+        exit(1);
     }
 
     if (info._mode == mode::decode) {
