@@ -1,5 +1,7 @@
 #!/bin/bash
 # just for copy/pasting
+# cmake --configure .
+# cmake --build .
 exit 0;
 
 aSteg -df ./data/news.caf
